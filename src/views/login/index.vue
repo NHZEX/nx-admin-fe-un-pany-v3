@@ -7,6 +7,7 @@ import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
 import { type FormInstance, FormRules } from "element-plus"
 import { getLoginCodeApi } from "@/api/login"
 import { type LoginRequestData } from "@/api/login/types/login"
+import { blob2DataUrl } from "@/utils"
 
 const router = useRouter()
 const loginFormRef = ref<FormInstance | null>(null)
@@ -17,9 +18,11 @@ const loading = ref(false)
 const codeUrl = ref("")
 /** 登录表单数据 */
 const loginForm: LoginRequestData = reactive({
-  username: "admin",
-  password: "12345678",
-  code: ""
+  username: "admin123",
+  password: "admin123",
+  code: "0000",
+  token: null,
+  lasting: false
 })
 /** 登录表单校验规则 */
 const loginFormRules: FormRules = {
@@ -39,7 +42,9 @@ const handleLogin = () => {
         .login({
           username: loginForm.username,
           password: loginForm.password,
-          code: loginForm.code
+          code: loginForm.code,
+          token: null,
+          lasting: false
         })
         .then(() => {
           router.push({ path: "/" })
@@ -62,8 +67,8 @@ const createCode = () => {
   loginForm.code = ""
   // 获取验证码
   codeUrl.value = ""
-  getLoginCodeApi().then((res) => {
-    codeUrl.value = res.data
+  getLoginCodeApi().then(async (res) => {
+    codeUrl.value = await blob2DataUrl(res.data)
   })
 }
 
@@ -98,7 +103,7 @@ createCode()
               tabindex="2"
               :prefix-icon="Lock"
               size="large"
-              show-password
+              show-word-limit
             />
           </el-form-item>
           <el-form-item prop="code">
@@ -112,7 +117,7 @@ createCode()
               size="large"
             >
               <template #append>
-                <el-image :src="codeUrl" @click="createCode" draggable="false">
+                <el-image :src="codeUrl" @click.stop="createCode" draggable="false">
                   <template #placeholder>
                     <el-icon><Picture /></el-icon>
                   </template>

@@ -5,11 +5,10 @@ import { useUserStoreHook } from "@/store/modules/user"
 export const permission: Directive = {
   mounted(el, binding) {
     const { value } = binding
-    const { roles } = useUserStoreHook()
-    if (Array.isArray(value) && value.length > 0) {
-      const permissionRoles = value
-      const hasPermission = roles.some((role) => permissionRoles.includes(role))
-      if (!hasPermission) {
+    const { allowAccess } = useUserStoreHook()
+
+    if (value) {
+      if (!allowAccess(value)) {
         // 隐藏
         // el.style.display = "none"
         // 销毁

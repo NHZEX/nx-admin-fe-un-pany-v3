@@ -52,7 +52,7 @@ const filterAffixTags = (routes: RouteRecordRaw[], basePath = "/") => {
 }
 
 const initTags = () => {
-  affixTags = filterAffixTags(permissionStore.routes)
+  affixTags = filterAffixTags(permissionStore.routesInfo.routes)
   for (const tag of affixTags) {
     // 必须含有 name 属性
     if (tag.name) {

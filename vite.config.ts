@@ -10,7 +10,7 @@ import UnoCSS from "unocss/vite"
 
 /** 配置项文档：https://cn.vitejs.dev/config */
 export default (configEnv: ConfigEnv): UserConfigExport => {
-  const viteEnv = loadEnv(configEnv.mode, process.cwd()) as ImportMetaEnv
+  const viteEnv = loadEnv(configEnv.mode, process.cwd(), ["VITE_", "DEV_"]) as ImportMetaEnv
   const { VITE_PUBLIC_PATH } = viteEnv
   return {
     /** 打包时根据实际情况修改 base */
@@ -42,6 +42,13 @@ export default (configEnv: ConfigEnv): UserConfigExport => {
           /** 是否允许跨域 */
           changeOrigin: true,
           rewrite: (path) => path.replace("/api/v1", "")
+        },
+        "/api-proxy": {
+          target: viteEnv.DEV_API_SERVER_PATH,
+          ws: true,
+          /** 是否允许跨域 */
+          changeOrigin: true,
+          rewrite: (path) => path.replace("/api-proxy", "")
         }
       }
     },

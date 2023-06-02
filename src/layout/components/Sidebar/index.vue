@@ -48,7 +48,7 @@ const isCollapse = computed(() => {
         mode="vertical"
       >
         <SidebarItem
-          v-for="route in permissionStore.routes"
+          v-for="route in permissionStore.routesInfo.routes"
           :key="route.path"
           :item="route"
           :base-path="route.path"
