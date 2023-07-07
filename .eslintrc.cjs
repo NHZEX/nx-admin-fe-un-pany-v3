@@ -65,9 +65,10 @@ module.exports = {
     ],
     // Prettier
     "prettier/prettier": [
-      "error",
+      "warn",
       {
-        endOfLine: "auto"
+        endOfLine: "auto",
+        trailingComma: "none"
       }
     ]
   }
