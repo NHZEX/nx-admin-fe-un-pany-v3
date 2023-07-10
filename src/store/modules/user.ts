@@ -1,56 +1,60 @@
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import store from "@/store"
 import { defineStore } from "pinia"
+import { usePermissionStore } from "./permission"
 import { useTagsViewStore } from "./tags-view"
 import { useSettingsStore } from "./settings"
-import { getToken, removeToken, setToken } from "@/utils/cache/cookies"
+import { getToken, getUUID, setSecret, clearSecret } from "@/utils/cache/cookies"
 import { resetRouter } from "@/router"
 import { loginApi, getUserInfoApi } from "@/api/login"
 import { type LoginRequestData } from "@/api/login/types/login"
-import routeSettings from "@/config/route"
+import { cloneDeep } from "lodash-es"
+import { hash_sha256 } from "@ozxin/js-tools/src/crypto/hash"
+import { UserType } from "@/enum/user"
+import { type AuthItem, type UserInfo } from "types/nx-system"
 
 export const useUserStore = defineStore("user", () => {
+  // todo 分离 SessionStorage
+  const uuid = ref<string>(getUUID() || "")
   const token = ref<string>(getToken() || "")
-  const roles = ref<string[]>([])
-  const username = ref<string>("")
+  const user = ref<UserInfo | null>(null)
 
+  const permissionStore = usePermissionStore()
   const tagsViewStore = useTagsViewStore()
   const settingsStore = useSettingsStore()
 
   /** 登录 */
-  const login = async ({ username, password, code }: LoginRequestData) => {
-    const { data } = await loginApi({ username, password, code })
-    setToken(data.token)
+  const login = async (loginData: LoginRequestData) => {
+    loginData = cloneDeep(loginData)
+    loginData.password = hash_sha256(loginData.password)
+    const { data } = await loginApi(loginData)
+    setSecret(data.uuid, data.token)
+    uuid.value = data.uuid
     token.value = data.token
   }
   /** 获取用户详情 */
   const getInfo = async () => {
     const { data } = await getUserInfoApi()
-    username.value = data.username
-    // 验证返回的 roles 是否为一个非空数组，否则塞入一个没有任何作用的默认角色，防止路由守卫逻辑进入无限循环
-    roles.value = data.roles?.length > 0 ? data.roles : routeSettings.defaultRoles
+    user.value = data.user
+    permissionStore.setPermissions(data.permission)
   }
-  /** 模拟角色变化 */
-  const changeRoles = async (role: string) => {
-    const newToken = "token-" + role
-    token.value = newToken
-    setToken(newToken)
-    // 用刷新页面代替重新登录
-    window.location.reload()
+
+  const clearState = () => {
+    token.value = ""
+    uuid.value = ""
   }
+
   /** 登出 */
   const logout = () => {
-    removeToken()
-    token.value = ""
-    roles.value = []
+    clearSecret()
+    clearState()
     resetRouter()
     _resetTagsView()
   }
   /** 重置 Token */
   const resetToken = () => {
-    removeToken()
-    token.value = ""
-    roles.value = []
+    clearSecret()
+    clearState()
   }
   /** 重置 Visited Views 和 Cached Views */
   const _resetTagsView = () => {
@@ -60,7 +64,22 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
-  return { token, roles, username, login, getInfo, changeRoles, logout, resetToken }
+  const username = computed<string>(() => user.value?.username || "")
+  const nickname = computed<string>(() => user.value?.nickname || "")
+  const isSupperAdmin = computed(() => user.value?.genre === UserType.SUPER_ADMIN)
+
+  return {
+    roles: [], // 弃用
+    token,
+    username,
+    login,
+    getInfo,
+    logout,
+    resetToken,
+    nickname,
+    isSupperAdmin,
+    allowAccess: (testAuth: AuthItem) => permissionStore.allowAccess(testAuth)
+  }
 })
 
 /** 在 setup 外使用 */

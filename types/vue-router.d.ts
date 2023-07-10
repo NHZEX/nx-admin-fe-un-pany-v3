@@ -1,5 +1,7 @@
 import "vue-router"
 
+import { type AuthItem } from "./nx-system"
+
 declare module "vue-router" {
   interface RouteMeta {
     /**
@@ -19,7 +21,7 @@ declare module "vue-router" {
      */
     hidden?: boolean
     /**
-     * 设置该路由进入的权限，支持多个权限叠加
+     * 设置该路由进入的权限，支持多个权限叠加（弃用）
      */
     roles?: string[]
     /**
@@ -48,5 +50,10 @@ declare module "vue-router" {
      * 默认为 false，为 true 时代表需要缓存，此时该路由和该页面都需要设置一致的 Name
      */
     keepAlive?: boolean
+
+    /**
+     * 路由的访问权限
+     */
+    auth?: AuthItem
   }
 }

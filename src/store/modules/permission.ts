@@ -1,23 +1,56 @@
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import store from "@/store"
 import { defineStore } from "pinia"
 import { type RouteRecordRaw } from "vue-router"
-import { constantRoutes, dynamicRoutes } from "@/router"
+import { constantRoutes, dynamicRoutes, frameEndMust } from "@/router"
 import { flatMultiLevelRoutes } from "@/router/helper"
 import routeSettings from "@/config/route"
+import { type LoginPermission, type AuthItem } from "types/nx-system"
 
-const hasPermission = (roles: string[], route: RouteRecordRaw) => {
-  const routeRoles = route.meta?.roles
-  return routeRoles ? roles.some((role) => routeRoles.includes(role)) : true
+type RouteInfo = {
+  routes: RouteRecordRaw[]
+  dynamicRoutes: RouteRecordRaw[]
 }
 
-const filterDynamicRoutes = (routes: RouteRecordRaw[], roles: string[]) => {
+const hasPermission = (permissions: string[], testAuth: AuthItem, matchMode: "some" | "every" = "some"): boolean => {
+  if (false === testAuth || null === testAuth || undefined === testAuth) {
+    return true
+  }
+  if (testAuth === true && permissions.length > 0) {
+    return true
+  }
+  if (typeof testAuth === "string" && permissions.includes(testAuth)) {
+    return true
+  }
+  if (Array.isArray(testAuth)) {
+    if (matchMode === "some") {
+      return testAuth.some((role) => permissions.includes(role))
+    } else if (matchMode === "every") {
+      return testAuth.every((role) => permissions.includes(role))
+    } else {
+      return false
+    }
+  } else {
+    return false
+  }
+}
+
+const testAllowAccessRouteItem = (permissions: string[], route: RouteRecordRaw) => {
+  const testAuth = route.meta?.auth
+  if (!testAuth) {
+    return true
+  }
+  return hasPermission(permissions, testAuth)
+}
+
+const filterDynamicRoutes = (routes: RouteRecordRaw[], permissions: string[]) => {
   const res: RouteRecordRaw[] = []
   routes.forEach((route) => {
     const tempRoute = { ...route }
-    if (hasPermission(roles, tempRoute)) {
+    const isAuth = testAllowAccessRouteItem(permissions, tempRoute)
+    if (isAuth) {
       if (tempRoute.children) {
-        tempRoute.children = filterDynamicRoutes(tempRoute.children, roles)
+        tempRoute.children = filterDynamicRoutes(tempRoute.children, permissions)
       }
       res.push(tempRoute)
     }
@@ -26,28 +59,49 @@ const filterDynamicRoutes = (routes: RouteRecordRaw[], roles: string[]) => {
 }
 
 export const usePermissionStore = defineStore("permission", () => {
-  /** 可访问的路由 */
-  const routes = ref<RouteRecordRaw[]>([])
-  /** 有访问权限的动态路由 */
-  const addRoutes = ref<RouteRecordRaw[]>([])
+  const permissions = ref<string[]>([])
+  const isLoaded = ref<boolean>(false)
 
-  /** 根据角色生成可访问的 Routes（可访问的路由 = 常驻路由 + 有访问权限的动态路由） */
-  const setRoutes = (roles: string[]) => {
-    const accessedRoutes = filterDynamicRoutes(dynamicRoutes, roles)
-    _set(accessedRoutes)
+  function setPermissions(value: LoginPermission) {
+    permissions.value = Object.keys(value)
+    isLoaded.value = true
   }
 
-  /** 所有路由 = 所有常驻路由 + 所有动态路由 */
-  const setAllRoutes = () => {
-    _set(dynamicRoutes)
+  function allowAccess(testAuth: AuthItem): boolean {
+    return hasPermission(permissions.value, testAuth)
   }
 
-  const _set = (accessedRoutes: RouteRecordRaw[]) => {
-    routes.value = constantRoutes.concat(accessedRoutes)
-    addRoutes.value = routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(accessedRoutes) : accessedRoutes
+  function reset(): void {
+    permissions.value = []
+    isLoaded.value = false
   }
 
-  return { routes, addRoutes, setRoutes, setAllRoutes }
+  /**
+   * 根据角色生成可访问的 Routes（可访问路由 = 常驻路由 + 有访问权限的动态路由）
+   */
+  function generateRoutes(): RouteInfo {
+    let accessedRoutes = asyncRouteSettings.open ? filterDynamicRoutes(asyncRoutes, permissions.value) : dynamicRoutes
+    accessedRoutes = accessedRoutes.concat(frameEndMust)
+
+    accessedRoutes = routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(accessedRoutes) : accessedRoutes
+
+    // todo 要检查是否 routes 是否需要兼容三级路由
+    // todo 要检查 routes 与 dynamicRoutes 区别
+    return {
+      routes: constantRoutes.concat(accessedRoutes),
+      dynamicRoutes: accessedRoutes
+    }
+  }
+
+  const routesInfo = computed((): RouteInfo => {
+    return generateRoutes()
+  })
+
+  // 兼容旧代码
+  const routes = computed((): RouteRecordRaw[] => routesInfo.value.routes)
+  const dynamicRoutes = computed((): RouteRecordRaw[] => routesInfo.value.dynamicRoutes)
+
+  return { routes, dynamicRoutes, setPermissions, allowAccess, reset, isLoaded, permissions, routesInfo }
 })
 
 /** 在 setup 外使用 */

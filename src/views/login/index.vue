@@ -8,6 +8,7 @@ import { getLoginCodeApi } from "@/api/login"
 import { type LoginRequestData } from "@/api/login/types/login"
 import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
 import Owl from "./components/Owl.vue"
+import { blob2DataUrl } from "@/utils"
 import { useFocus } from "./hooks/useFocus"
 
 const router = useRouter()
@@ -22,9 +23,11 @@ const loading = ref(false)
 const codeUrl = ref("")
 /** 登录表单数据 */
 const loginFormData: LoginRequestData = reactive({
-  username: "admin",
-  password: "12345678",
-  code: ""
+  username: "admin123",
+  password: "admin123",
+  code: "0000",
+  token: null,
+  lasting: false
 })
 /** 登录表单校验规则 */
 const loginFormRules: FormRules = {
@@ -63,8 +66,8 @@ const createCode = () => {
   loginFormData.code = ""
   // 获取验证码
   codeUrl.value = ""
-  getLoginCodeApi().then((res) => {
-    codeUrl.value = res.data
+  getLoginCodeApi().then(async (res) => {
+    codeUrl.value = await blob2DataUrl(res.data)
   })
 }
 

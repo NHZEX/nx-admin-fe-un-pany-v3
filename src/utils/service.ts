@@ -1,8 +1,12 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios"
+import axios, { type AxiosInstance, type AxiosRequestConfig, AxiosResponse } from "axios"
 import { useUserStoreHook } from "@/store/modules/user"
 import { ElMessage } from "element-plus"
 import { get, merge } from "lodash-es"
 import { getToken } from "./cache/cookies"
+
+class ErrorApiResponse extends Error {
+  response: AxiosResponse | null = null
+}
 
 /** 退出登录并强制刷新页面（会重定向到登录页） */
 function logout() {
@@ -13,7 +17,11 @@ function logout() {
 /** 创建请求实例 */
 function createService() {
   // 创建一个 axios 实例命名为 service
-  const service = axios.create()
+  const service = axios.create({
+    headers: {
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  })
   // 请求拦截
   service.interceptors.request.use(
     (config) => config,
@@ -25,9 +33,11 @@ function createService() {
     (response) => {
       // apiData 是 api 返回的数据
       const apiData = response.data
-      // 二进制数据则直接返回
-      const responseType = response.request?.responseType
-      if (responseType === "blob" || responseType === "arraybuffer") return apiData
+      // 二进制数据则直接返回原始结构
+      const request = response.request as AxiosRequestConfig
+      if (request.responseType === "blob" || request.responseType === "arraybuffer") {
+        return response
+      }
       // 这个 code 是和后端约定的业务 code
       const code = apiData.code
       // 如果没有 code, 代表这不是项目后端开发的 api
@@ -39,23 +49,26 @@ function createService() {
         case 0:
           // 本系统采用 code === 0 来表示没有业务错误
           return apiData
-        case 401:
-          // Token 过期时
-          return logout()
-        default:
+        default: {
+          const message = `Api Error: ${apiData.message || "Fail"}`
+          const err = new ErrorApiResponse(message)
+          err.response = response
           // 不是正确的 code
-          ElMessage.error(apiData.message || "Error")
-          return Promise.reject(new Error("Error"))
+          ElMessage.error(message)
+          return Promise.reject(err)
+        }
       }
     },
     (error) => {
       // status 是 HTTP 状态码
       const status = get(error, "response.status")
+      const message = get(error, "response.data.message")
       switch (status) {
         case 400:
           error.message = "请求错误"
           break
         case 401:
+          error.message = "登录状态已过期"
           // Token 过期时
           logout()
           break
@@ -89,7 +102,7 @@ function createService() {
         default:
           break
       }
-      ElMessage.error(error.message)
+      ElMessage.error(`${error.message} (${message})`)
       return Promise.reject(error)
     }
   )
@@ -103,7 +116,7 @@ function createRequest(service: AxiosInstance) {
     const defaultConfig = {
       headers: {
         // 携带 Token
-        Authorization: token ? `Bearer ${token}` : undefined,
+        Authorization: `Bearer TK="${token}"`,
         "Content-Type": "application/json"
       },
       timeout: 5000,
