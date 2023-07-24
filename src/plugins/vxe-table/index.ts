@@ -33,17 +33,15 @@ VXETable.setup({
       resizable: false
     },
     align: "center",
-    headerAlign: "center",
-    /** 行数据的唯一主键字段名 */
-    rowId: "_VXE_ID"
+    headerAlign: "center"
   },
   pager: {
     // size: "medium",
     /** 配套的样式 */
     perfect: false,
-    pageSize: 10,
+    pageSize: 20,
     pagerCount: 7,
-    pageSizes: [10, 20, 50],
+    pageSizes: [10, 20, 50, 100, 200, 300],
     layouts: ["Total", "PrevJump", "PrevPage", "Number", "NextPage", "NextJump", "Sizes", "FullJump"]
   },
   modal: {

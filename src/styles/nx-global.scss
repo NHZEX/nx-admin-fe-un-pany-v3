@@ -1,0 +1,21 @@
+.nx-list {
+  list-style-type: none;
+  padding: 0 0 0 0.4rem;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+
+    label {
+      min-width: 5rem;
+      text-align: right;
+    }
+  }
+
+  &.nx-list-pb-y-2 {
+    li {
+      padding-bottom: 0.5rem;
+    }
+  }
+}

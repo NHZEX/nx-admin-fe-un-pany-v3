@@ -4,3 +4,15 @@ interface ApiResponseData<T> {
   data: T
   message: string
 }
+
+interface PageListResponseData<T> extends ApiResponseData {
+  data: T[]
+  total: number
+  page: {
+    current: number
+    size: number
+    hasMore: boolean
+  }
+}
+
+type ObjectId = number | string

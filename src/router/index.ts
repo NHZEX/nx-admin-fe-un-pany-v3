@@ -262,13 +262,14 @@ export const frameEndMust: RouteRecordRaw[] = [
 ]
 
 import Common from "./modules/common"
+import System from "./modules/system"
 
 /**
  * 动态路由
  * 用于需要鉴权的路由
  * 必须带有 Name 属性
  */
-const frameItems: RouteRecordRaw[] = [...Common]
+const frameItems: RouteRecordRaw[] = [...Common, ...System]
 
 /**
  * 动态路由

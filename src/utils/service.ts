@@ -38,6 +38,9 @@ function createService() {
       if (request.responseType === "blob" || request.responseType === "arraybuffer") {
         return response
       }
+      if (response.status === 204) {
+        return Promise.resolve(response)
+      }
       // 这个 code 是和后端约定的业务 code
       const code = apiData.code
       // 如果没有 code, 代表这不是项目后端开发的 api

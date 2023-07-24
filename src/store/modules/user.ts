@@ -11,13 +11,14 @@ import { type LoginRequestData } from "@/api/login/types/login"
 import { cloneDeep } from "lodash-es"
 import { hash_sha256 } from "@ozxin/js-tools/src/crypto/hash"
 import { UserType } from "@/enum/user"
-import { type AuthItem, type UserInfo } from "types/nx-system"
+import { type AuthItem } from "types/nx-system"
+import { type UserItem } from "@/api/admin/user"
 
 export const useUserStore = defineStore("user", () => {
   // todo 分离 SessionStorage
   const uuid = ref<string>(getUUID() || "")
   const token = ref<string>(getToken() || "")
-  const user = ref<UserInfo | null>(null)
+  const user = ref<UserItem | null>(null)
 
   const permissionStore = usePermissionStore()
   const tagsViewStore = useTagsViewStore()

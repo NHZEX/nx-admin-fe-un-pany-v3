@@ -1,25 +1,11 @@
-import { UserType } from "@/enum/user"
-
-interface UserInfo {
-  id: number
-  genre: UserType
-  status: number
-  username: string
-  nickname: string
-  email: string
-  avatar: string
-  role_id: number
-  create_time: number
-  update_time: number
-  last_login_time: number
-}
+import { type UserItem } from "@/api/admin/user"
 
 interface LoginPermission {
   [key: string]: boolean
 }
 
 interface LoginUserInfo {
-  user: UserInfo
+  user: UserItem
   permission: LoginPermission
 }
 
