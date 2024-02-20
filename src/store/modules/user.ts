@@ -50,6 +50,7 @@ export const useUserStore = defineStore("user", () => {
     clearSecret()
     clearState()
     resetRouter()
+    permissionStore.reset()
     _resetTagsView()
   }
   /** 重置 Token */
