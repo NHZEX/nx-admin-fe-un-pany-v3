@@ -278,11 +278,13 @@ const frameItems: RouteRecordRaw[] = [...Common, ...System]
  *
  * 目前兼容，稍后移除
  */
-export const asyncRoutes: RouteRecordRaw[] = frameItems
+export const dynamicRoutes: RouteRecordRaw[] = frameItems
 
 const router = createRouter({
   history,
-  routes: routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(constantRoutes) : constantRoutes.concat(frameEndMust)
+  routes: routeSettings.thirdLevelRouteCache
+    ? flatMultiLevelRoutes(constantRoutes)
+    : constantRoutes.concat(frameEndMust)
 })
 
 /** 重置路由 */

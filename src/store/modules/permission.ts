@@ -80,7 +80,7 @@ export const usePermissionStore = defineStore("permission", () => {
    * 根据角色生成可访问的 Routes（可访问路由 = 常驻路由 + 有访问权限的动态路由）
    */
   function generateRoutes(): RouteInfo {
-    let accessedRoutes = asyncRouteSettings.open ? filterDynamicRoutes(asyncRoutes, permissions.value) : dynamicRoutes
+    let accessedRoutes = routeSettings.dynamic ? filterDynamicRoutes(dynamicRoutes, permissions.value) : dynamicRoutes
     accessedRoutes = accessedRoutes.concat(frameEndMust)
 
     accessedRoutes = routeSettings.thirdLevelRouteCache ? flatMultiLevelRoutes(accessedRoutes) : accessedRoutes
@@ -99,9 +99,18 @@ export const usePermissionStore = defineStore("permission", () => {
 
   // 兼容旧代码
   const routes = computed((): RouteRecordRaw[] => routesInfo.value.routes)
-  const dynamicRoutes = computed((): RouteRecordRaw[] => routesInfo.value.dynamicRoutes)
+  const _dynamicRoutes = computed((): RouteRecordRaw[] => routesInfo.value.dynamicRoutes)
 
-  return { routes, dynamicRoutes, setPermissions, allowAccess, reset, isLoaded, permissions, routesInfo }
+  return {
+    routes,
+    dynamicRoutes: _dynamicRoutes,
+    setPermissions,
+    allowAccess,
+    reset,
+    isLoaded,
+    permissions,
+    routesInfo
+  }
 })
 
 /** 在 setup 外使用 */
