@@ -31,7 +31,9 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // 如果用户已经获得其权限角色
-  if (permissionStore.isLoaded) return next()
+  if (permissionStore.isLoaded) {
+    return next()
+  }
 
   // 否则要重新获取权限角色
   try {
