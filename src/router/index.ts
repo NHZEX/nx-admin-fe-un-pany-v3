@@ -17,7 +17,7 @@ export const constantRoutes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: "/redirect/:path(.*)",
+        path: ":path(.*)",
         component: () => import("@/views/redirect/index.vue")
       }
     ]
@@ -250,16 +250,7 @@ export const constantRoutes: RouteRecordRaw[] = [
   }
 ]
 
-export const frameEndMust: RouteRecordRaw[] = [
-  {
-    path: "/:pathMatch(.*)*", // Must put the 'ErrorPage' route at the end, 必须将 'ErrorPage' 路由放在最后
-    redirect: "/404",
-    name: "ErrorPage",
-    meta: {
-      hidden: true
-    }
-  }
-]
+export const frameEndMust: RouteRecordRaw[] = []
 
 import Common from "./modules/common"
 import System from "./modules/system"
