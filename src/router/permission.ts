@@ -17,7 +17,7 @@ router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStoreHook()
   const permissionStore = usePermissionStoreHook()
 
-  // 判断该用户是否已经登录
+  // 如果没有登陆
   if (!hasSecret()) {
     // 如果在免登录的白名单中，则直接进入
     if (isWhiteList(to)) return next()

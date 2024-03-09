@@ -217,7 +217,7 @@ export const constantRoutes: RouteRecordRaw[] = [
     redirect: "/hook-demo/use-fetch-select",
     name: "HookDemo",
     meta: {
-      title: "Hook 示例",
+      title: "Hook",
       elIcon: "Menu",
       alwaysShow: true
     },
