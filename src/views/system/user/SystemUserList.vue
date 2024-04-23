@@ -177,7 +177,7 @@ async function handleDelete(row: UserItem) {
 
 <template>
   <div class="app-container">
-    <vxe-grid ref="xGridIns" :loading="loading" v-bind="xGridOpt">
+    <vxe-grid ref="xGridIns" :loading="loading" v-bind="xGridOpt" height="auto" :auto-resize="true">
       <template #toolbar_buttons>
         <el-button icon="Refresh" :loading="loading" @click="handleRefresh()">刷新</el-button>
         <el-button type="primary" icon="Plus" @click="handleEdit(null)">新增</el-button>
