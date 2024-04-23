@@ -4,7 +4,7 @@ import type * as Login from "./types/login"
 /** 获取登录验证码 */
 export function getLoginCodeApi() {
   return request<Login.LoginCodeResponseData>({
-    url: "login/captcha",
+    url: "v2/captcha",
     method: "get",
     responseType: "blob"
   })
@@ -17,7 +17,7 @@ export function loginApi(data: Login.LoginRequestData) {
   dataCopy.account = data.username
 
   return request<Login.LoginResponseData>({
-    url: "users/login",
+    url: "v2/login",
     method: "post",
     data: dataCopy
   })
@@ -26,7 +26,7 @@ export function loginApi(data: Login.LoginRequestData) {
 /** 获取用户详情 */
 export function getUserInfoApi() {
   return request<Login.UserInfoResponseData>({
-    url: "users/info",
+    url: "v2/system/info",
     method: "get"
   })
 }
