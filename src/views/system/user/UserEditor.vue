@@ -142,7 +142,7 @@ defineExpose({
         </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-checkbox v-model="formData.status" :true-label="0" :false-label="1">启用</el-checkbox>
+        <el-checkbox v-model="formData.status" :true-value="0" :false-value="1">启用</el-checkbox>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="onSubmit">提交</el-button>
