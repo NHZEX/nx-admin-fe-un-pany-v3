@@ -48,7 +48,7 @@ const defaultSettings: LayoutSettings = {
   showScreenfull: true,
   showSearchMenu: true,
   cacheTagsView: false,
-  showWatermark: true,
+  showWatermark: false,
   showGreyMode: false,
   showColorWeakness: false,
   showLoginOwl: true
