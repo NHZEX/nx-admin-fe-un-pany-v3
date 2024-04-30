@@ -10,3 +10,10 @@ interface LoginUserInfo {
 }
 
 type AuthItem = string[] | string | boolean | null
+
+export interface ItemDataV1Base {
+  readonly create_time?: number
+  readonly update_time?: number
+  readonly delete_time?: number
+  readonly lock_version?: number
+}

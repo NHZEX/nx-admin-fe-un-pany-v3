@@ -22,6 +22,15 @@ const asyncRoutes: RouteRecordRaw[] = [
           title: "用户管理",
           auth: ["admin.user"]
         }
+      },
+      {
+        path: "role",
+        component: () => import("@/views/system/role/SystemRoleList.vue"),
+        name: "SystemRoleList",
+        meta: {
+          title: "角色管理",
+          auth: ["admin.role"]
+        }
       }
     ]
   }

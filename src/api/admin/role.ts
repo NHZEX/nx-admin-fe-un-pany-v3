@@ -1,15 +1,24 @@
 import { request } from "@/utils/service"
+import { ItemDataV1Base } from "types/nx-system"
+import { type PermissionSet } from "@/api/admin/permission"
 
-export interface UserItem {
-  id: number
-  create_time: number
-  update_time: number
-  lock_version: number
+export interface RoleItem extends ItemDataV1Base {
+  readonly id: number
+  readonly pid: number
+  genre: number
+  status: number
+  name: string
+  description: string
+  readonly status_desc?: string
+  readonly genre_desc?: string
+  ext?: {
+    permission?: PermissionSet
+  }
 }
 
-export type RolePageInfoResponseData = PageListResponseData<UserItem>
+export type RolePageInfoResponseData = PageListResponseData<RoleItem>
 
-export type RoleInfoResponseData = ApiResponseData<UserItem>
+export type RoleInfoResponseData = ApiResponseData<RoleItem>
 
 export type RoleSelectOption = {
   label: string
@@ -43,6 +52,22 @@ export const RoleApi = new (class {
       method: "get",
       url: `v2/admin/roles/${id}`
     })
+  }
+
+  save(id: ObjectId | null, data: object) {
+    if (id === null) {
+      return request<ApiResponseData<any>>({
+        method: "post",
+        url: `v2/admin/roles`,
+        data
+      })
+    } else {
+      return request<ApiResponseData<any>>({
+        method: "put",
+        url: `v2/admin/roles/${id}`,
+        data
+      })
+    }
   }
 
   delete(id: string | number) {
