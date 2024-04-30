@@ -6,6 +6,13 @@ import { SystemApi } from "@/api/admin/system"
 import { ElMessage } from "element-plus"
 import { EditPen } from "@element-plus/icons-vue"
 
+interface PermissionTreeRow extends PermissionTree {
+  _control: {
+    loading: boolean
+    data: any
+  }
+}
+
 const loading = ref<{
   query: boolean
   edit: boolean
@@ -17,8 +24,9 @@ const loading = ref<{
   scan: false,
   reset: false
 })
+const isChange = ref<boolean>(false)
 const xGridIns = ref<VxeGridInstance>()
-const xGridOpt = reactive<VxeGridProps<PermissionTree>>({
+const xGridOpt = reactive<VxeGridProps<PermissionTreeRow>>({
   border: true,
   align: null,
   autoResize: true,
@@ -63,7 +71,7 @@ const xGridOpt = reactive<VxeGridProps<PermissionTree>>({
         attrs: { type: "text" }
       }
     },
-    { title: "查看", minWidth: 80, slots: { default: "action" } }
+    { title: "查看", minWidth: 80, slots: { default: "RowAction" } }
   ],
   toolbarConfig: {
     slots: {
@@ -80,16 +88,45 @@ const xGridOpt = reactive<VxeGridProps<PermissionTree>>({
         loading.value.query = true
         try {
           const { data } = await PermissionApi.all()
-          console.log(data)
-          return data
+          return recursionTree(data)
         } finally {
           loading.value.query = false
         }
       }
     }
+  },
+  expandConfig: {
+    accordion: false,
+    lazy: true,
+    loadMethod: async ({ row }) => {
+      row._control.loading = true
+      row._control.data = []
+      try {
+        const result = await PermissionApi.read(row.name)
+        if (result) {
+          row._control.data = result.data.allow
+        }
+      } finally {
+        row._control.loading = false
+      }
+    }
   }
 })
-const isChange = ref<boolean>(false)
+const recursionTree = (item: PermissionTreeRow[] | PermissionTree[]) => {
+  return item.map((el) => {
+    el = {
+      ...el,
+      _control: {
+        loading: false,
+        data: []
+      }
+    }
+    if (el.children && el.children.length) {
+      el.children = recursionTree(el.children)
+    }
+    return el
+  })
+}
 
 function handleRefresh() {
   xGridIns.value?.commitProxy("query")
@@ -98,6 +135,10 @@ function handleRefresh() {
 function editClosed() {
   const rows = xGridIns.value!.getUpdateRecords()
   isChange.value = rows.length > 0
+}
+
+function controlView(row: PermissionTreeRow) {
+  xGridIns.value!.toggleRowExpand(row)
 }
 
 async function handleScan() {
@@ -126,6 +167,7 @@ async function saveChange() {
     loading.value.edit = false
   }
 }
+
 async function resetCache() {
   loading.value.reset = true
   try {
@@ -137,6 +179,10 @@ async function resetCache() {
       message: "重置缓存完成"
     })
   }
+}
+
+async function clearRowExpand() {
+  await xGridIns.value!.clearRowExpand()
 }
 </script>
 
@@ -158,30 +204,44 @@ async function resetCache() {
           :loading="loading.scan || loading.query || loading.edit"
           @click="handleScan()"
           icon="MagicStick"
-          >扫描权限</el-button
-        >
+          >扫描权限
+        </el-button>
         <!--v-access="'admin.permission.edit'" -->
         <el-button type="success" :loading="loading.edit" :disabled="!isChange" @click="saveChange()" icon="Upload"
-          >保存更改</el-button
-        >
+          >保存更改
+        </el-button>
         <!--v-access="'admin.resetCache'" -->
         <el-button type="warning" :loading="loading.reset" @click="resetCache()" icon="RefreshRight"
-          >重置缓存</el-button
-        >
+          >重置缓存
+        </el-button>
+        <el-button type="info" @click="clearRowExpand()" icon="Fold">折叠展开</el-button>
       </template>
       <template #RowSort="{ row, column }">
         <el-icon>
           <EditPen />
         </el-icon>
-        <span style="color: #515a6e; margin-left: 2px">{{ row[column.property] }}</span>
+        <span style="color: #515a6e; margin-left: 2px">{{ row[column.field] }}</span>
       </template>
       <template #RowDesc="{ row, column }">
         <el-icon>
           <EditPen />
         </el-icon>
         <span style="color: #515a6e; margin-left: 2px">{{
-          row[column.property] ? row[column.property] : "[无注释]"
+          row[column.property] ? row[column.field] : "[无注释]"
         }}</span>
+      </template>
+      <template #RowAction="{ row }: { row: PermissionTreeRow }">
+        <el-button type="info" :loading="row._control.loading" icon="document" @click="controlView(row)"
+          >查看节点
+        </el-button>
+      </template>
+      <template #expand="{ row }: { row: PermissionTreeRow }">
+        <vxe-table :data="row._control.data" max-height="350px">
+          <vxe-column title="节点" field="name" width="280" show-overflow="title"></vxe-column>
+          <vxe-column title="注释" field="desc" show-overflow="title">
+            <template #default="{ row, column }">{{ row[column.field] || "无" }}</template>
+          </vxe-column>
+        </vxe-table>
       </template>
     </vxe-grid>
   </div>
