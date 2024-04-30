@@ -4,6 +4,12 @@ export type PermissionTreeResponseData = ApiResponseData<PermissionTree[]>
 
 export type PermissionSet = string[]
 
+export interface PermissionChangeItem {
+  sort: string
+  desc: string
+}
+export type PermissionChangeItems = Record<string, PermissionChangeItem>
+
 export interface PermissionTree {
   name: string
   children?: PermissionTree[]
@@ -35,6 +41,17 @@ export const PermissionApi = new (class {
     return request<ApiResponseData<any>>({
       method: "post",
       url: `v2/admin/permission/scan`
+    })
+  }
+
+  async saveItems(rows: PermissionChangeItems) {
+    return request<ApiResponseData<any>>({
+      method: "put",
+      url: `v2/admin/permission/root`,
+      data: {
+        batch: true,
+        list: rows
+      }
     })
   }
 })()
