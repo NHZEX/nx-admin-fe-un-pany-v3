@@ -134,7 +134,7 @@ defineExpose({
 <template>
   <el-card
     v-loading="loading"
-    v-for="(item, i) of database"
+    v-for="item of database"
     :key="item.name"
     style="max-width: 1100px"
     :body-style="{ padding: '6px' }"
@@ -144,7 +144,6 @@ defineExpose({
     </template>
     <div style="width: 100%">
       <vxe-table
-        :id="`table_${i}`"
         :data="item.table"
         border
         size="small"
@@ -170,6 +169,7 @@ defineExpose({
               }"
               :sort-config="partitionSortConfig"
             >
+              <vxe-column type="seq" title="#" width="50" align="left"></vxe-column>
               <vxe-column title="分区" field="partition_name" width="150" sortable show-overflow="title"></vxe-column>
               <vxe-column field="table_rows" title="行数" width="90" sortable></vxe-column>
               <vxe-column field="human.total_size" title="表尺寸" width="120" sortable></vxe-column>
