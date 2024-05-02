@@ -7,4 +7,18 @@ export const SystemApi = new (class {
       url: "v2/system/resetCache"
     })
   }
+
+  systemInfo() {
+    return request<ApiResponseData<any>>({
+      method: "GET",
+      url: "v2/system/sysinfo"
+    })
+  }
+
+  database() {
+    return request<ApiResponseData<any>>({
+      method: "GET",
+      url: "v2/system/database"
+    })
+  }
 })()

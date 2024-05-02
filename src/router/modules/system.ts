@@ -40,6 +40,15 @@ const asyncRoutes: RouteRecordRaw[] = [
           title: "权限管理",
           auth: ["admin.permission"]
         }
+      },
+      {
+        path: "system-info",
+        component: () => import("@/views/system/SystemInfoIndex.vue"),
+        name: "SystemInfoIndex",
+        meta: {
+          title: "系统信息",
+          auth: ["admin"]
+        }
       }
     ]
   }
