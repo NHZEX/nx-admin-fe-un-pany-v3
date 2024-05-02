@@ -90,7 +90,7 @@ defineExpose({
     </template>
     <div style="width: 100%">
       <vxe-table
-        :data="item.tables"
+        :data="item.table"
         border
         size="small"
         max-height="900"

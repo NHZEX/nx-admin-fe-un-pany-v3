@@ -2,7 +2,7 @@ import { request } from "@/utils/service"
 
 export interface DatabaseItem {
   name: string
-  tables: TableInfo[]
+  table: TableInfo[]
   version: string
   message: string | null
 }
