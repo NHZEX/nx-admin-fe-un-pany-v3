@@ -5,7 +5,7 @@ export default defineConfig({
   presets: [
     /** 属性化模式 & 无值的属性模式 */
     presetAttributify(),
-    /** 默认预设 */
+    /** 默认预设 此预设继承 @unocss/preset-wind 和 @unocss/preset-mini */
     presetUno()
   ],
   /** 自定义规则 */
