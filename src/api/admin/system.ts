@@ -19,11 +19,39 @@ export interface TableInfo {
   create_time: string
   update_time: string
   table_comment: string
+  partition: PartitionInfo[] | null
   human: {
     avg_row_size: string
     total_size: string
     data_size: string
     index_size: string
+    data_free_size: string
+  }
+}
+
+export interface PartitionInfo {
+  table_name: string
+  partition_name: string
+  subpartition_name: string | null
+  partition_method: string
+  subpartition_method: string | null
+  partition_expression: string
+  subpartition_expression: string | null
+  partition_description: string
+  table_rows: number
+  avg_row_length: number
+  data_length: number
+  max_data_length: number
+  index_length: number
+  data_free: number
+  create_time: string
+  update_time: string | null
+  check_time: string | null
+  human: {
+    avg_row_size: string
+    data_size: string
+    index_size: string
+    total_size: string
     data_free_size: string
   }
 }

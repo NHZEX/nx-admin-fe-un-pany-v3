@@ -1,12 +1,13 @@
 <script setup lang="tsx">
 import { ref, onMounted } from "vue"
-import { SystemApi, type TableInfo, DatabaseItem } from "@/api/admin/system"
+import { SystemApi, type TableInfo, DatabaseItem, PartitionInfo } from "@/api/admin/system"
 import { VxeTablePropTypes } from "vxe-table/types/table"
 
 const loading = ref<boolean>(false)
 const database = ref<DatabaseItem[]>([])
 
 type RowVO = TableInfo
+type RowPartitionInfo = PartitionInfo
 
 async function handleRefresh() {
   loading.value = true
@@ -22,27 +23,24 @@ const sortConfig = ref<VxeTablePropTypes.SortConfig<RowVO>>({
   remote: false,
   sortMethod({ data, sortList }) {
     const sortItem = sortList[0]
+    console.log(sortItem)
 
-    const humanMap = {
-      avg_row_size: "avg_row_length",
-      data_size: "data_length",
-      index_size: "index_length",
-      data_free_size: "data_free",
-      total_size: (item: RowVO) => item.data_length + item.index_length
+    const sortValMap = {
+      "human.avg_row_size": "avg_row_length",
+      "human.data_size": "data_length",
+      "human.index_size": "index_length",
+      "human.data_free_size": "data_free",
+      "human.total_size": (item: RowVO) => item.data_length + item.index_length,
+      partition: (item: RowVO) => (Array.isArray(item.partition) ? item.partition.length : 0)
     }
 
-    type humanFieldType = keyof typeof humanMap
+    type sortValueFieldName = keyof typeof sortValMap
 
-    const property: keyof RowVO | string = sortItem.field
+    const property: keyof RowVO | sortValueFieldName | string = sortItem.field
     let sortProperty: string | Function
-    let humanField: humanFieldType
 
-    if (
-      property.startsWith("human.") &&
-      (humanField = property.split(".")[1] as humanFieldType) &&
-      Object.prototype.hasOwnProperty.call(humanMap, humanField)
-    ) {
-      sortProperty = humanMap[humanField]
+    if (Object.prototype.hasOwnProperty.call(sortValMap, property)) {
+      sortProperty = sortValMap[property as sortValueFieldName]
     } else {
       sortProperty = property
     }
@@ -70,6 +68,62 @@ const sortConfig = ref<VxeTablePropTypes.SortConfig<RowVO>>({
   }
 })
 
+const expandConfig = ref<VxeTablePropTypes.ExpandConfig<RowVO>>({
+  labelField: "table_name",
+  visibleMethod({ row }) {
+    return row.partition ? row.partition?.length > 0 : false
+  }
+})
+
+const partitionSortConfig = ref<VxeTablePropTypes.SortConfig<RowPartitionInfo>>({
+  remote: false,
+  multiple: false,
+  sortMethod({ data, sortList }) {
+    const sortItem = sortList[0]
+    console.log(data, sortItem)
+
+    const sortValMap = {
+      "human.avg_row_size": "avg_row_length",
+      "human.data_size": "data_length",
+      "human.index_size": "index_length",
+      "human.data_free_size": "data_free",
+      "human.total_size": (item: RowPartitionInfo) => item.data_length + item.index_length
+    }
+
+    type sortValueFieldName = keyof typeof sortValMap
+
+    const property: keyof RowPartitionInfo | sortValueFieldName | string = sortItem.field
+    let sortProperty: string | Function
+
+    if (Object.prototype.hasOwnProperty.call(sortValMap, property)) {
+      sortProperty = sortValMap[property as sortValueFieldName]
+    } else {
+      sortProperty = property
+    }
+
+    data.sort((a, b) => {
+      let aVal
+      let bVal
+
+      if (typeof sortProperty === "function") {
+        aVal = sortProperty(a)
+        bVal = sortProperty(b)
+      } else {
+        aVal = a[sortProperty as keyof RowPartitionInfo]
+        bVal = b[sortProperty as keyof RowPartitionInfo]
+      }
+
+      if (sortItem.order === "desc") {
+        return aVal < bVal ? 1 : -1
+      } else {
+        return aVal > bVal ? 1 : -1
+      }
+    })
+
+    return data
+  }
+})
+
 onMounted(async () => await handleRefresh())
 
 defineExpose({
@@ -80,7 +134,7 @@ defineExpose({
 <template>
   <el-card
     v-loading="loading"
-    v-for="item of database"
+    v-for="(item, i) of database"
     :key="item.name"
     style="max-width: 1100px"
     :body-style="{ padding: '6px' }"
@@ -90,21 +144,58 @@ defineExpose({
     </template>
     <div style="width: 100%">
       <vxe-table
+        :id="`table_${i}`"
         :data="item.table"
         border
         size="small"
+        auto-resize
         max-height="900"
         :empty-text="item.message || '暂无数据'"
+        :row-config="{
+          useKey: true,
+          keyField: 'table_name'
+        }"
         :sort-config="sortConfig"
+        :expand-config="expandConfig"
       >
-        <vxe-column type="seq" title="#" fixed="left" width="50"></vxe-column>
-        <vxe-column field="table_name" title="表名" fixed="left" width="180" sortable></vxe-column>
-        <vxe-column field="table_rows" title="行数" fixed="left" width="90" sortable></vxe-column>
+        <vxe-column type="seq" title="#" width="50" align="left"></vxe-column>
+        <vxe-column type="expand" title="表名" width="180" sortable align="left">
+          <template #content="{ row }: { row: RowVO }">
+            <vxe-table
+              :data="row.partition"
+              max-height="350px"
+              :row-config="{
+                useKey: true,
+                keyField: 'id'
+              }"
+              :sort-config="partitionSortConfig"
+            >
+              <vxe-column title="分区" field="partition_name" width="150" sortable show-overflow="title"></vxe-column>
+              <vxe-column field="table_rows" title="行数" width="90" sortable></vxe-column>
+              <vxe-column field="human.total_size" title="表尺寸" width="120" sortable></vxe-column>
+              <vxe-column field="human.data_size" title="数据大小" width="120" sortable></vxe-column>
+              <vxe-column field="human.index_size" title="索引大小" width="120" sortable></vxe-column>
+              <vxe-column field="human.data_free_size" title="碎片大小" width="120" sortable></vxe-column>
+              <vxe-column field="human.avg_row_size" title="平均行尺寸" width="120" sortable></vxe-column>
+              <vxe-column field="update_time" title="更新时间" width="140" sortable></vxe-column>
+              <vxe-column field="partition_description" title="分区注释" width="140"></vxe-column>
+            </vxe-table>
+          </template>
+        </vxe-column>
+        <vxe-column
+          field="partition"
+          title="分区"
+          width="90"
+          sortable
+          :formatter="({ cellValue }) => (Array.isArray(cellValue) ? cellValue.length : '无')"
+        ></vxe-column>
+        <vxe-column field="table_rows" title="行数" width="90" sortable></vxe-column>
         <vxe-column field="human.total_size" title="表尺寸" width="100" sortable></vxe-column>
         <vxe-column field="human.data_size" title="数据大小" width="100" sortable></vxe-column>
         <vxe-column field="human.index_size" title="索引大小" width="100" sortable></vxe-column>
         <vxe-column field="human.data_free_size" title="碎片大小" width="100" sortable></vxe-column>
         <vxe-column field="human.avg_row_size" title="平均行尺寸" width="110" sortable></vxe-column>
+        <vxe-column field="table_collation" title="字符集" width="140" sortable></vxe-column>
         <vxe-column field="update_time" title="更新时间" width="140" sortable></vxe-column>
         <vxe-column field="table_comment" title="表注释" width="140"></vxe-column>
       </vxe-table>
