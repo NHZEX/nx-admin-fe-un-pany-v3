@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue"
 import { SystemApi, type TableInfo, DatabaseItem } from "@/api/admin/system"
 import { VxeTablePropTypes } from "vxe-table/types/table"
 import DatabasePartitionTabel from "@/views/system/components/DatabasePartitionTabel.vue"
+import dayjs from "dayjs"
 
 const loading = ref<boolean>(false)
 const database = ref<DatabaseItem[]>([])
@@ -19,6 +20,18 @@ async function handleRefresh() {
   }
 }
 
+function toTimestamp(data: string | null): number {
+  if (!data) {
+    return 0
+  }
+  try {
+    return dayjs(data).unix()
+  } catch (e) {
+    console.error(e)
+    return 0
+  }
+}
+
 const sortConfig = ref<VxeTablePropTypes.SortConfig<RowVO>>({
   remote: false,
   sortMethod({ data, sortList }) {
@@ -30,7 +43,9 @@ const sortConfig = ref<VxeTablePropTypes.SortConfig<RowVO>>({
       "human.index_size": "index_length",
       "human.data_free_size": "data_free",
       "human.total_size": (item: RowVO) => item.data_length + item.index_length,
-      partition: (item: RowVO) => (Array.isArray(item.partition) ? item.partition.length : 0)
+      partition: (item: RowVO) => (Array.isArray(item.partition) ? item.partition.length : 0),
+      create_time: (item: RowVO) => toTimestamp(item.create_time),
+      update_time: (item: RowVO) => toTimestamp(item.update_time)
     }
 
     type sortValueFieldName = keyof typeof sortValMap

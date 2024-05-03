@@ -2,12 +2,25 @@
 import { ref } from "vue"
 import { PartitionInfo } from "@/api/admin/system"
 import { VxeTablePropTypes } from "vxe-table/types/table"
+import dayjs from "dayjs"
 
 type RowPartitionInfo = PartitionInfo
 
 const props = defineProps<{
   partition: PartitionInfo[]
 }>()
+
+function toTimestamp(data: string | null): number {
+  if (!data) {
+    return 0
+  }
+  try {
+    return dayjs(data).unix()
+  } catch (e) {
+    console.error(e)
+    return 0
+  }
+}
 
 const partitionSortConfig = ref<VxeTablePropTypes.SortConfig<RowPartitionInfo>>({
   remote: false,
@@ -20,7 +33,9 @@ const partitionSortConfig = ref<VxeTablePropTypes.SortConfig<RowPartitionInfo>>(
       "human.data_size": "data_length",
       "human.index_size": "index_length",
       "human.data_free_size": "data_free",
-      "human.total_size": (item: RowPartitionInfo) => item.data_length + item.index_length
+      "human.total_size": (item: RowPartitionInfo) => item.data_length + item.index_length,
+      create_time: (item: RowPartitionInfo) => toTimestamp(item.create_time),
+      update_time: (item: RowPartitionInfo) => toTimestamp(item.update_time)
     }
 
     type sortValueFieldName = keyof typeof sortValMap
@@ -76,8 +91,8 @@ const partitionSortConfig = ref<VxeTablePropTypes.SortConfig<RowPartitionInfo>>(
     <vxe-column field="human.index_size" title="索引大小" width="120" sortable></vxe-column>
     <vxe-column field="human.data_free_size" title="碎片大小" width="120" sortable></vxe-column>
     <vxe-column field="human.avg_row_size" title="平均行尺寸" width="120" sortable></vxe-column>
-    <vxe-column field="create_time" title="创建时间" width="140"></vxe-column>
-    <vxe-column field="update_time" title="更新时间" width="140"></vxe-column>
+    <vxe-column field="create_time" title="创建时间" width="140" sortable></vxe-column>
+    <vxe-column field="update_time" title="更新时间" width="140" sortable></vxe-column>
     <vxe-column field="partition_description" title="分区注释" width="140"></vxe-column>
   </vxe-table>
 </template>
