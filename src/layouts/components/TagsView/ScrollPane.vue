@@ -5,7 +5,8 @@ import { useSettingsStore } from "@/store/modules/settings"
 import { useRouteListener } from "@/hooks/useRouteListener"
 import Screenfull from "@/components/Screenfull/index.vue"
 import { ElScrollbar } from "element-plus"
-import { ArrowLeft, ArrowRight } from "@element-plus/icons-vue"
+import { ArrowLeft, ArrowRight, Refresh } from "@element-plus/icons-vue"
+import { useTagsViewStore, type TagView } from "@/store/modules/tags-view"
 
 interface Props {
   tagRefs: InstanceType<typeof RouterLink>[]
@@ -13,8 +14,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  toggleRefresh: [tag: TagView]
+}>()
+
 const route = useRoute()
 const settingsStore = useSettingsStore()
+const tagsViewStore = useTagsViewStore()
 const { listenerRouteChange } = useRouteListener()
 
 /** 滚动条组件元素的引用 */
@@ -95,6 +101,14 @@ const moveTo = () => {
   }
 }
 
+const refreshCurrentTag = () => {
+  const tag = tagsViewStore.currentActiveView
+  if (null === tag) {
+    return
+  }
+  emit("toggleRefresh", tag)
+}
+
 /** 监听路由变化，移动到目标位置 */
 listenerRouteChange(() => {
   nextTick(moveTo)
@@ -103,6 +117,9 @@ listenerRouteChange(() => {
 
 <template>
   <div class="scroll-container">
+    <el-icon class="arrow left" @click="refreshCurrentTag()">
+      <Refresh />
+    </el-icon>
     <el-icon class="arrow left" @click="scrollTo('left')">
       <ArrowLeft />
     </el-icon>

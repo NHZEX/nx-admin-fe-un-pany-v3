@@ -164,7 +164,7 @@ onMounted(() => {
 
 <template>
   <div class="tags-view-container">
-    <ScrollPane class="tags-view-wrapper" :tag-refs="tagRefs">
+    <ScrollPane class="tags-view-wrapper" :tag-refs="tagRefs" @toggle-refresh="refreshSelectedTag">
       <router-link
         ref="tagRefs"
         v-for="tag in tagsViewStore.visitedViews"
