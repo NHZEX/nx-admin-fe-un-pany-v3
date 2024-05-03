@@ -23,7 +23,6 @@ const sortConfig = ref<VxeTablePropTypes.SortConfig<RowVO>>({
   remote: false,
   sortMethod({ data, sortList }) {
     const sortItem = sortList[0]
-    console.log(sortItem)
 
     const sortValMap = {
       "human.avg_row_size": "avg_row_length",
@@ -128,6 +127,7 @@ defineExpose({
         <vxe-column field="human.data_free_size" title="碎片大小" width="100" sortable></vxe-column>
         <vxe-column field="human.avg_row_size" title="平均行尺寸" width="110" sortable></vxe-column>
         <vxe-column field="table_collation" title="字符集" width="140" sortable></vxe-column>
+        <vxe-column field="create_time" title="创建时间" width="140" sortable></vxe-column>
         <vxe-column field="update_time" title="更新时间" width="140" sortable></vxe-column>
         <vxe-column field="table_comment" title="表注释" width="140"></vxe-column>
       </vxe-table>
