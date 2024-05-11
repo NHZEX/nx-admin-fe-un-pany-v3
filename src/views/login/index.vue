@@ -71,6 +71,12 @@ const createCode = () => {
   getLoginCodeApi().then(async (res) => {
     codeUrl.value = await blob2DataUrl(res.data)
     loginFormData.token = res.headers["x-captcha-token"]
+    if (
+      import.meta.env.MODE === "development" &&
+      Object.prototype.hasOwnProperty.call(res.headers, "x-test-captcha-code")
+    ) {
+      loginFormData.code = res.headers["x-test-captcha-code"]
+    }
   })
 }
 
