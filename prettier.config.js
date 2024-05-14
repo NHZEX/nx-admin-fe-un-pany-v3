@@ -20,3 +20,6 @@ export default {
   /** 是否加分号 */
   semi: false
 }
+// todo 待调整选项
+// printWidth: 100
+// trailingComma: es5
