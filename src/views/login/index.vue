@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { reactive, ref } from "vue"
+import { onMounted, reactive, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { useUserStore } from "@/store/modules/user"
-import { type FormInstance, type FormRules } from "element-plus"
+import { type FormInstance, type FormRules, type ElInput } from "element-plus"
 import { User, Lock, Key, Picture, Loading } from "@element-plus/icons-vue"
-import { getLoginCodeApi } from "@/api/login"
-import { type LoginRequestData } from "@/api/login/types/login"
+import { getLoginCodeApi, getLoginConfigApi } from "@/api/login"
+import { type LoginRequestData, LoginConfig } from "@/api/login/types/login"
 import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
 import Owl from "./components/Owl.vue"
 import { blob2DataUrl } from "@/utils"
@@ -18,6 +18,12 @@ const settingsStore = useSettingsStore()
 
 /** 登录表单元素的引用 */
 const loginFormRef = ref<FormInstance | null>(null)
+const formCodeRef = ref<InstanceType<typeof ElInput> | null>(null)
+
+const loginConfig = ref<LoginConfig>({
+  enableCaptcha: false
+})
+const loginSuccess = ref<boolean>(false)
 
 /** 登录按钮 Loading */
 const loading = ref(false)
@@ -27,7 +33,7 @@ const codeUrl = ref("")
 const loginFormData: LoginRequestData = reactive({
   username: "admin123",
   password: "admin123",
-  code: "0000",
+  code: "",
   token: null,
   lasting: false
 })
@@ -36,23 +42,33 @@ const loginFormRules: FormRules = {
   username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
   password: [
     { required: true, message: "请输入密码", trigger: "blur" },
-    { min: 8, max: 16, message: "长度在 8 到 16 个字符", trigger: "blur" }
+    { min: 6, max: 64, message: "长度在 8 到 16 个字符", trigger: "blur" }
   ],
   code: [{ required: true, message: "请输入验证码", trigger: "blur" }]
 }
 /** 登录逻辑 */
 const handleLogin = () => {
+  if (loading.value) {
+    console.warn("wait for data to load")
+    return
+  }
   loginFormRef.value?.validate((valid: boolean, fields) => {
     if (valid) {
       loading.value = true
       useUserStore()
         .login(loginFormData)
         .then(() => {
+          loginSuccess.value = true
           router.push({ path: "/" })
         })
-        .catch(() => {
-          createCode()
-          loginFormData.password = ""
+        .catch(({ response }) => {
+          if (response?.data?.code === 1103) {
+            loginFormData.password = ""
+          } else if (response?.data?.code === 1001) {
+            createCode({ focus: true })
+          } else {
+            loginFormData.password = ""
+          }
         })
         .finally(() => {
           loading.value = false
@@ -63,25 +79,56 @@ const handleLogin = () => {
   })
 }
 /** 创建验证码 */
-const createCode = () => {
+const createCode = (options: { focus: boolean } = { focus: false }): void => {
+  if (!loginConfig.value.enableCaptcha) {
+    return
+  }
   // 先清空验证码的输入
   loginFormData.code = ""
   // 获取验证码
   codeUrl.value = ""
-  getLoginCodeApi().then(async (res) => {
-    codeUrl.value = await blob2DataUrl(res.data)
-    loginFormData.token = res.headers["x-captcha-token"]
-    if (
-      import.meta.env.MODE === "development" &&
-      Object.prototype.hasOwnProperty.call(res.headers, "x-test-captcha-code")
-    ) {
-      loginFormData.code = res.headers["x-test-captcha-code"]
-    }
-  })
+
+  loading.value = true
+  getLoginCodeApi()
+    .then(async (res) => {
+      codeUrl.value = await blob2DataUrl(res.data)
+      loginFormData.token = res.headers["x-captcha-token"]
+      if (
+        import.meta.env.MODE === "development" &&
+        Object.prototype.hasOwnProperty.call(res.headers, "x-test-captcha-code")
+      ) {
+        loginFormData.code = res.headers["x-test-captcha-code"]
+      }
+    })
+    .finally(() => {
+      loading.value = false
+      if (options.focus) {
+        formCodeRef.value?.focus()
+      }
+    })
 }
 
-/** 初始化验证码 */
-createCode()
+const loadConfig = async () => {
+  loading.value = true
+  try {
+    const { data } = await getLoginConfigApi()
+    loginConfig.value = data
+  } finally {
+    loading.value = false
+  }
+}
+
+watch(
+  () => loginConfig.value.enableCaptcha,
+  (value) => {
+    if (value) {
+      /** 初始化验证码 */
+      createCode()
+    }
+  }
+)
+
+onMounted(loadConfig)
 </script>
 
 <template>
@@ -90,7 +137,7 @@ createCode()
     <Owl :close-eyes="isFocus" v-if="settingsStore.showLoginOwl" />
     <div class="login-card">
       <div class="title">
-        <img src="@/assets/layouts/logo-text-2.png" />
+        <img src="@/assets/layouts/logo-text-2.png" alt="logo-title" />
       </div>
       <div class="content">
         <el-form ref="loginFormRef" :model="loginFormData" :rules="loginFormRules" @keyup.enter="handleLogin">
@@ -117,8 +164,9 @@ createCode()
               @focus="handleFocus"
             />
           </el-form-item>
-          <el-form-item prop="code">
+          <el-form-item prop="code" v-if="loginConfig.enableCaptcha">
             <el-input
+              ref="formCodeRef"
               v-model.trim="loginFormData.code"
               placeholder="验证码"
               type="text"
@@ -143,7 +191,14 @@ createCode()
               </template>
             </el-input>
           </el-form-item>
-          <el-button :loading="loading" type="primary" size="large" @click.prevent="handleLogin">登 录</el-button>
+          <el-button
+            :loading="loading"
+            type="primary"
+            size="large"
+            @click.prevent="handleLogin"
+            :disabled="loginSuccess"
+            >登 录</el-button
+          >
         </el-form>
       </div>
     </div>

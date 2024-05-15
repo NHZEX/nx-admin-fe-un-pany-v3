@@ -2,6 +2,14 @@ import { request } from "@/utils/service"
 import type * as Login from "./types/login"
 
 /** 获取登录验证码 */
+export function getLoginConfigApi() {
+  return request<Login.LoginConfigResponseData>({
+    url: "v2/login",
+    method: "get"
+  })
+}
+
+/** 获取登录验证码 */
 export function getLoginCodeApi() {
   return request<Login.LoginCodeResponseData>({
     url: "v2/captcha",

@@ -14,6 +14,12 @@ export interface LoginRequestData {
   lasting: false
 }
 
+export interface LoginConfig {
+  enableCaptcha: boolean
+}
+
+export type LoginConfigResponseData = AxiosResponse<LoginConfig>
+
 export type LoginCodeResponseData = AxiosResponse<Blob>
 
 export type LoginResponseData = ApiResponseData<{ uuid: string; token: string }>
