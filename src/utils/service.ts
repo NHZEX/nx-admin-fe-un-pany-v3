@@ -1,11 +1,126 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, AxiosResponse } from "axios"
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+  InternalAxiosRequestConfig
+} from "axios"
 import { useUserStoreHook } from "@/store/modules/user"
 import { ElMessage } from "element-plus"
-import { get, merge } from "lodash-es"
+import { isPlainObject, merge } from "lodash-es"
 import { getToken } from "./cache/cookies"
+import { sanitizeHTML, truncateString } from "@/utils/index"
 
 class ErrorApiResponse extends Error {
-  response: AxiosResponse | null = null
+  public readonly code: number | string
+  public readonly innerError: AxiosError | Error | object | null
+  public readonly response?: AxiosResponse
+  public readonly url: string | null
+  public readonly config?: AxiosRequestConfig
+
+  constructor(
+    message: string,
+    code: number | string,
+    innerError: AxiosError | Error | object | null,
+    response?: AxiosResponse,
+    config?: AxiosRequestConfig | InternalAxiosRequestConfig
+  ) {
+    super(message)
+    this.code = code
+    this.innerError = innerError
+    this.response = response
+    this.config = config
+    this.url = response?.request?.responseURL
+
+    // 设置原型链
+    Object.setPrototypeOf(this, ErrorApiResponse.prototype)
+  }
+
+  public isAxiosError(): boolean {
+    return axios.isAxiosError(this.innerError)
+  }
+
+  public isCancel(): boolean {
+    return axios.isCancel(this.innerError)
+  }
+
+  public toPromise(): Promise<ErrorApiResponse> {
+    return Promise.reject(this)
+  }
+
+  public toReportMessage(): string {
+    let url = this.url ? new URL(this.url) : ""
+    if (url instanceof URL) {
+      url = url.pathname + url.search + url.hash
+    }
+    const responseStatus = `${this.response?.status} ${httpCodeToText(this.response?.status ?? 0) ?? this.response?.statusText}`
+    return [sanitizeHTML(this.message), `at status (${responseStatus})`, `at settle (${sanitizeHTML(url)})`].join("\n")
+  }
+
+  public static create(
+    message: string,
+    code: number | string,
+    innerError: AxiosError | Error | object | null,
+    response?: AxiosResponse,
+    config?: AxiosRequestConfig
+  ): ErrorApiResponse {
+    if (response === undefined && innerError instanceof AxiosError) {
+      response = innerError.response
+    }
+    if (config === undefined && innerError instanceof AxiosError) {
+      config = innerError.config
+    }
+
+    const error = new ErrorApiResponse(message, code, innerError, response)
+
+    if (innerError instanceof AxiosError) {
+      const silentErrorNotify = innerError?.config?.silentErrorNotify ?? true
+
+      silentErrorNotify && responseErrorNotify(error)
+    }
+
+    return error
+  }
+}
+
+function responseErrorNotify(error: ErrorApiResponse) {
+  const p = error
+    .toReportMessage()
+    .split("\n")
+    .map((v) => `<p>${v}</p>`)
+  ElMessage.error({
+    dangerouslyUseHTMLString: true,
+    message: p.join("")
+  })
+}
+
+function httpCodeToText(code: number): string | null {
+  switch (code) {
+    case 400:
+      return "请求错误"
+    case 401:
+      return "登录状态已过期"
+    case 403:
+      return "拒绝访问"
+    case 404:
+      return "请求地址出错"
+    case 408:
+      return "请求超时"
+    case 500:
+      return "服务器内部错误"
+    case 501:
+      return "服务未实现"
+    case 502:
+      return "网关错误"
+    case 503:
+      return "服务不可用"
+    case 504:
+      return "网关超时"
+    case 505:
+      return "HTTP 版本不受支持"
+    default:
+      return null
+  }
 }
 
 /** 退出登录并强制刷新页面（会重定向到登录页） */
@@ -31,82 +146,70 @@ function createService() {
   // 响应拦截（可根据具体业务作出相应的调整）
   service.interceptors.response.use(
     (response) => {
-      // apiData 是 api 返回的数据
-      const apiData = response.data
+      const respData = response.data
+      const requestConfig = response.request as AxiosRequestConfig
       // 二进制数据则直接返回原始结构
-      const request = response.request as AxiosRequestConfig
-      if (request.responseType === "blob" || request.responseType === "arraybuffer") {
+      if (
+        requestConfig.responseType === "blob" ||
+        requestConfig.responseType === "arraybuffer" ||
+        !(requestConfig?.extractData || true)
+      ) {
         return response
       }
       if (response.status === 204) {
         return Promise.resolve(response)
       }
       // 这个 code 是和后端约定的业务 code
-      const code = apiData.code
+      const code = respData.code
       // 如果没有 code, 代表这不是项目后端开发的 api
       if (code === undefined) {
-        ElMessage.error("非本系统的接口")
-        return Promise.reject(new Error("非本系统的接口"))
+        return ErrorApiResponse.create("非系统的接口", -1, null, response, requestConfig).toPromise()
       }
-      switch (code) {
-        case 0:
-          // 本系统采用 code === 0 来表示没有业务错误
-          return apiData
-        default: {
-          const message = `Api Error: ${apiData.message || "Fail"}`
-          const err = new ErrorApiResponse(message)
-          err.response = response
-          // 不是正确的 code
-          ElMessage.error(message)
-          return Promise.reject(err)
+      return respData
+    },
+    async (error) => {
+      console.debug(error)
+      if (axios.isCancel(error)) {
+        error.message = `request canceled: ${error.message}`
+        return ErrorApiResponse.create(`request canceled: ${error.message}`, -1, error, undefined).toPromise()
+      }
+      if (!axios.isAxiosError(error)) {
+        return ErrorApiResponse.create(`fault: ${error.message}`, -1, error, undefined).toPromise()
+      }
+      error = error as AxiosError
+      const response = error.response
+      const respData = response?.data
+
+      const httpCode = response!.status
+      console.log(respData)
+      try {
+        if (isPlainObject(respData)) {
+          const errno = respData?.errno || -1
+          const message = respData?.message || "unknown"
+          return ErrorApiResponse.create(message, errno, error, response).toPromise()
+        } else if (respData instanceof Blob) {
+          const result = await respData.text()
+          let message = "unknown"
+          let errno = -1
+          try {
+            const data = JSON.parse(result)
+            if (isPlainObject(data)) {
+              errno = data.errno
+              message = data.message
+            }
+          } catch (e) {
+            message = truncateString(result, 128, "[omit...]")
+          }
+          return ErrorApiResponse.create(message, errno, error, response).toPromise()
+        } else {
+          return ErrorApiResponse.create("unknown", -1, error, response).toPromise()
+        }
+      } finally {
+        if (httpCode === 401) {
+          // 会话过期
+          logout()
         }
       }
-    },
-    (error) => {
-      // status 是 HTTP 状态码
-      const status = get(error, "response.status")
-      const message = get(error, "response.data.message")
-      switch (status) {
-        case 400:
-          error.message = "请求错误"
-          break
-        case 401:
-          error.message = "登录状态已过期"
-          // Token 过期时
-          logout()
-          break
-        case 403:
-          error.message = "拒绝访问"
-          break
-        case 404:
-          error.message = "请求地址出错"
-          break
-        case 408:
-          error.message = "请求超时"
-          break
-        case 500:
-          error.message = "服务器内部错误"
-          break
-        case 501:
-          error.message = "服务未实现"
-          break
-        case 502:
-          error.message = "网关错误"
-          break
-        case 503:
-          error.message = "服务不可用"
-          break
-        case 504:
-          error.message = "网关超时"
-          break
-        case 505:
-          error.message = "HTTP 版本不受支持"
-          break
-        default:
-          break
-      }
-      ElMessage.error(`${error.message} (${message})`)
-      return Promise.reject(error)
     }
   )
   return service
