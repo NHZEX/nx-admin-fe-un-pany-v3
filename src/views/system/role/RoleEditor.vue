@@ -105,34 +105,40 @@ defineExpose({
     @close="onClose"
     @open="onOpen"
     title="角色编辑"
-    width="500px"
+    width="800px"
     footer-hide
     :styles="{ top: '20px' }"
   >
     <el-form ref="formIns" :model="formData" :rules="rules" label-width="80px" v-loading="loading">
-      <el-form-item label="名称" prop="name">
-        <el-input name="username" v-model.trim="formData.name" :readonly="isEditor" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-checkbox v-model="formData.status" :true-value="0" :false-value="1">启用</el-checkbox>
-      </el-form-item>
-      <el-form-item label="备注" prop="description">
-        <el-input
-          name="description"
-          v-model.trim="formData.description"
-          type="textarea"
-          :autosize="{ minRows: 2 }"
-          maxlength="256"
-        />
-      </el-form-item>
-      <el-form-item label="权限">
-        <PermissionTree
-          v-model="selectedPermission"
-          :create-mode="!isEditor"
-          ref="permissionTreeIns"
-          style="min-width: 300px"
-        ></PermissionTree>
-      </el-form-item>
+      <div class="flex">
+        <div class="min-w-40%">
+          <el-form-item label="名称" prop="name">
+            <el-input name="username" v-model.trim="formData.name" :readonly="isEditor" />
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-checkbox v-model="formData.status" :true-value="0" :false-value="1">启用</el-checkbox>
+          </el-form-item>
+          <el-form-item label="备注" prop="description">
+            <el-input
+              name="description"
+              v-model.trim="formData.description"
+              type="textarea"
+              :autosize="{ minRows: 5 }"
+              maxlength="256"
+            />
+          </el-form-item>
+        </div>
+        <div class="min-w-60% min-h-xl">
+          <el-form-item label="权限">
+            <PermissionTree
+              v-model="selectedPermission"
+              :create-mode="!isEditor"
+              ref="permissionTreeIns"
+              style="width: 100%"
+            ></PermissionTree>
+          </el-form-item>
+        </div>
+      </div>
       <el-form-item>
         <el-button type="primary" @click="onSubmit">提交</el-button>
       </el-form-item>
