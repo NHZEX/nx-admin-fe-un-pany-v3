@@ -61,6 +61,7 @@ const filterDynamicRoutes = (routes: RouteRecordRaw[], permissions: string[]) =>
 export const usePermissionStore = defineStore("permission", () => {
   const permissions = ref<string[]>([])
   const isLoaded = ref<boolean>(false)
+  const routesLoaded = ref<boolean>(false)
 
   function setPermissions(value: LoginPermission) {
     permissions.value = Object.keys(value)
@@ -74,6 +75,7 @@ export const usePermissionStore = defineStore("permission", () => {
   function reset(): void {
     permissions.value = []
     isLoaded.value = false
+    routesLoaded.value = false
   }
 
   /**
@@ -108,6 +110,7 @@ export const usePermissionStore = defineStore("permission", () => {
     allowAccess,
     reset,
     isLoaded,
+    routesLoaded,
     permissions,
     routesInfo
   }

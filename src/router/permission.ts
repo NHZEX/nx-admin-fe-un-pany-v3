@@ -31,7 +31,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // 如果用户已经获得其权限角色
-  if (permissionStore.isLoaded) {
+  if (permissionStore.isLoaded && permissionStore.routesLoaded) {
     return next()
   }
 
@@ -43,7 +43,9 @@ router.beforeEach(async (to, _from, next) => {
     permissionStore.routesInfo.routes.forEach((route) => {
       router.addRoute(route)
     })
+
     // 确保添加路由已完成
+    permissionStore.routesLoaded = true
     // 设置 replace: true, 因此导航将不会留下历史记录
     next({ ...to, replace: true })
   } catch (err: any) {
