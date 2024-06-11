@@ -8,6 +8,16 @@
   font-size: 12px;
 }
 
+#app-loading-text {
+  display: flex;
+  color: #409eff;
+  font-size: 24px;
+  padding-top: 2em;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+}
+
 #app-loading,
 #app-loading::before,
 #app-loading::after {

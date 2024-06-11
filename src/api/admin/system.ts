@@ -1,5 +1,10 @@
 import { request } from "@/utils/service"
 
+export interface SystemSettings {
+  // 启用登录验证码
+  loginCaptcha: boolean
+}
+
 export interface DatabaseItem {
   name: string
   table: TableInfo[]
@@ -57,6 +62,14 @@ export interface PartitionInfo {
 }
 
 export const SystemApi = new (class {
+  config() {
+    return request<ApiResponseData<SystemSettings>>({
+      method: "get",
+      url: "v2/system/config",
+      authorization: false
+    })
+  }
+
   resetCache() {
     return request<ApiResponseData<any>>({
       method: "POST",

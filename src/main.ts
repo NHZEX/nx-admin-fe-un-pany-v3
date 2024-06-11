@@ -16,6 +16,8 @@ import "element-plus/theme-chalk/dark/css-vars.css"
 import "vxe-table/lib/style.css"
 import "vxe-table-plugin-element/dist/style.css"
 import "@/styles/index.scss"
+// server
+import { useSystemSettingsStore } from "@/store/modules/admin/system-config"
 
 const app = createApp(App)
 
@@ -27,6 +29,14 @@ loadSvg(app)
 loadDirectives(app)
 
 app.use(store).use(router)
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  await init()
   app.mount("#app")
 })
+
+async function init() {
+  const systemSettings = useSystemSettingsStore(store)
+  const loadingTextDom = document.querySelector("#app-loading-text")
+  loadingTextDom!.textContent = "Config Loading..."
+  await systemSettings.loadData()
+}
