@@ -6,6 +6,7 @@ export interface UserItem {
   genre: UserType
   status: number
   role_id: number
+  role_ids: number[]
   nickname: string
   username: string
   email?: string
@@ -21,6 +22,7 @@ export interface UserItem {
   avatar_data?: null
   avatar?: string
   readonly role_name?: string
+  readonly roles?: { id: number; name: string }[]
 }
 
 export type UserPageInfoResponseData = PageListResponseData<UserItem>

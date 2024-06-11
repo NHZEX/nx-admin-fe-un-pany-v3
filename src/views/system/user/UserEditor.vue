@@ -18,6 +18,7 @@ const defaultFormData: UserForm = {
   nickname: "",
   password: "",
   role_id: 0,
+  role_ids: [],
   status: 0,
   repeatPassword: ""
 }
@@ -52,7 +53,7 @@ const rules = reactive<FormRules<UserForm>>({
 
 const { options: roleList } = useAdminRoleSelectHook()
 
-const isEditor = computed(() => editorId.value && editorId.value > 0)
+const isEditor = computed(() => !!editorId.value && editorId.value > 0)
 
 function onOpen() {
   loadData()
@@ -117,7 +118,7 @@ defineExpose({
     <el-form ref="formIns" :model="formData" :rules="rules" label-width="80px" v-loading="loading">
       <el-form-item label="类型" prop="genre">
         <el-radio-group v-model="formData.genre" :disabled="isEditor">
-          <el-radio v-for="item in UserTypeDict.toList()" :key="item.value" :label="item.value">{{
+          <el-radio v-for="item in UserTypeDict.toList()" :key="item.value" :value="item.value">{{
             item.label
           }}</el-radio>
         </el-radio-group>
@@ -136,8 +137,13 @@ defineExpose({
           <el-input type="password" v-model.trim="formData.repeatPassword" placeholder="输入创建用户密码" />
         </el-form-item>
       </template>
-      <el-form-item label="角色" prop="role_id">
-        <el-select v-model="formData.role_id" placeholder="请选择用户角色" style="width: 100%">
+      <el-form-item label="角色(弃用)" prop="role_id" v-if="formData.role_id > 0">
+        <el-select v-model="formData.role_id" placeholder="请选择用户角色" style="width: 100%" disabled>
+          <el-option v-for="item in roleList" :key="item.value" :value="item.value" :label="item.label" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="角色" prop="role_ids">
+        <el-select v-model="formData.role_ids" multiple clearable placeholder="请选择用户角色" style="width: 100%">
           <el-option v-for="item in roleList" :key="item.value" :value="item.value" :label="item.label" />
         </el-select>
       </el-form-item>

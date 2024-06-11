@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from "vue"
 import { type VxeGridInstance, type VxeGridProps } from "vxe-table"
 import { UserApi, type UserItem } from "@/api/admin/user"
 import { formatUnix } from "@/utils"
-import { ElMessage, ElMessageBox } from "element-plus"
+import { ElMessage, ElMessageBox, ElTag } from "element-plus"
 import UserEditor from "@/views/system/user/UserEditor.vue"
 
 const loading = ref<boolean>(false)
@@ -58,7 +58,25 @@ const xGridOpt = reactive<VxeGridProps<UserItem>>({
         }
       }
     },
-    { field: "role_name", title: "角色" },
+    {
+      field: "role_name",
+      title: "角色",
+      slots: {
+        default({ row }: { row: UserItem }) {
+          return (
+            <>
+              {row.role_id > 0 && <ElTag type="warning">{row.role_name}</ElTag>}
+              {(() => {
+                if (row.roles?.length) {
+                  return <div class={["flex", "space-x-2"]}>{row.roles?.map((v) => <ElTag>{v.name}</ElTag>)}</div>
+                }
+                return null
+              })()}
+            </>
+          )
+        }
+      }
+    },
     {
       title: "状态",
       slots: {
