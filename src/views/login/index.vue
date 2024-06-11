@@ -55,6 +55,7 @@ const handleLogin = () => {
   loginFormRef.value?.validate((valid: boolean, fields) => {
     if (valid) {
       loading.value = true
+      loginSuccess.value = false
       useUserStore()
         .login(loginFormData)
         .then(() => {

@@ -32,6 +32,9 @@ export const useUserStore = defineStore("user", () => {
     setSecret(data.uuid, data.token)
     uuid.value = data.uuid
     token.value = data.token
+
+    // 立即加载用户数据，避免出现权限不足问题导致登录过程被中断
+    await getInfo()
   }
   /** 获取用户详情 */
   const getInfo = async () => {

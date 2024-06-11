@@ -87,7 +87,7 @@ function responseErrorNotify(error: ErrorApiResponse) {
   const p = error
     .toReportMessage()
     .split("\n")
-    .map((v) => `<p>${v}</p>`)
+    .map((v) => `<p>${sanitizeHTML(v)}</p>`)
   ElMessage.error({
     dangerouslyUseHTMLString: true,
     message: p.join("")
@@ -181,7 +181,7 @@ function createService() {
       const respData = response?.data
 
       const httpCode = response!.status
-      console.log(respData)
+      console.debug(respData)
       try {
         if (isPlainObject(respData)) {
           const errno = respData?.errno || -1
